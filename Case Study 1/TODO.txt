@@ -1,0 +1,5 @@
+Finished ECM 
+
+. Add pre calculations
+. Baseline case
+. JS Divergence Regularization
