@@ -2,8 +2,8 @@ function [diff,x_var,u_var,L,DxDu,gradU,Fendxk,FendMeas,FendGradMeas] = ReactorM
 %    Block reactor model - Implementation of the isothermal CSTR
 %
 % Inputs:
-%    dx0 = initial states (used as guess to the solver)
-%    u0 = inputs
+%    dx0 = initial differential states (guess)
+%    u0 = inputs (fixed for simulation)
 %    par = system parameters
 %    flag = indicates which model structure to use
 %
@@ -11,36 +11,17 @@ function [diff,x_var,u_var,L,DxDu,gradU,Fendxk,FendMeas,FendGradMeas] = ReactorM
 %    diff: system symbolic description (casadi)
 %    x_var,u_var: symbolic states and inputs
 %    L: symbolic quadrature value (-Cc)
+%    DxDu: sensitivity equations symbolic
+%    gradU: gradients symbolic
 %    Fendxk: numeric differential states values
 %    FendMeas: numeric mesurements
 %    FendGradMeasu: numeric gradient
 %
 % Other m-files required: none
-% Subfunctions: none
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br
-% March 2018; Last revision: 13-Mar-2018
       
-%%
-%%%%%%%%%%%%%%%%%%%%%%
-% CHANGE PATH HERE
-%%%%%%%%%%%%%%%%%%%%%%
-%addpath ('\\home.ansatt.ntnu.no\joseoa\Documents\casadi-windows-matlabR2016a-v3.4.5')
 import casadi.*
 
-%% Differential states
-%symbolic declaration
-%concentration array [Ca, Cb, Cc, Cd]
-x_var = MX.sym('C',par.nc,1); % 1-4 [mol/L]
-
-%% Input
-%A inflow rate
-u_var = MX.sym('Fa',1); %[L/min]
-
-%Model determination (boolean)
-xB = MX.sym('xB',par.nr); % 1-3 [-]
 %Multi model structure
 % m1, m2, m3: A + B -k1-> C & 2B -k2-> D
 % m1: k1 = 0.75, k2 = 1.2 
@@ -56,6 +37,17 @@ xB = MX.sym('xB',par.nr); % 1-3 [-]
 % m1: k1 = 0.1
 % m2: k1 = 0.2
 % m3: k1 = 0.3 
+
+%% Differential states
+%symbolic declaration
+%concentration array [Ca, Cb, Cc, Cd]
+x_var = MX.sym('C',par.nc,1); % 1-4 [mol/L]
+
+%% Input
+%A inflow rate
+u_var = MX.sym('Fa',1); %[L/min]
+%Model determination (boolean)
+xB = MX.sym('xB',par.nr); % 1-3 [-]
 
 %% System equations
 %%stoichiometric coefficients
@@ -122,10 +114,10 @@ FendGradMeas = full(gradMeas(u0));
     % ===================================
     %     gradients
     % ===================================    
-    %gradient
+    %gradient (SS sensitivities)
     gradU = MX.sym('s',length(dx0),1); %dx/du
     
-    %calculating gradients
+    %calculating sensitivities equations symbolically
     DxDu = jacobian(diff,x_var)*gradU - jacobian(diff,u_var);
 
 

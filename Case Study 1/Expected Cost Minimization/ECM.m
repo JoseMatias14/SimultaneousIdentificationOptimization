@@ -24,7 +24,7 @@ function [pik,ukArray,rho_k,pi_k_index,epsk,lambdak] = ECM(dxk_1,uk_1,par,yValue
 import casadi.*
 
 %Measurement covariance - previously calculated
-load('covLow');
+load('covMatrix');
 
 %Computing inputs setpoint and belief for all models
 ukArray = [];
@@ -62,13 +62,13 @@ for jj = 1:ma.nModels
     res_k = [H*measValue - H*yValuePlant; H*gradMeas - gradYPlantHat];
     
     % returns the pdf of the normal distribution with mean mu and standard deviation sigma, evaluated at the values in x.
-    probkArray = [probkArray; mvnpdf(sqrt(1e1)*res_k,[],1e1*sigmaY)];
+    probkArray = [probkArray; mvnpdf(sqrt(1e1)*res_k,[],1e1*covMeas)];
     
     clc
 
 end
 
-% normalizing cost array
+% normalizing probability array
 probNArray = probkArray/(sum(probkArray));
 
 %Bayesian update of the belief

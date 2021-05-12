@@ -11,7 +11,7 @@
 
 % MAT-files required: results_standard.mat(from: ...\Baseline Case - Standard Method)
 %                     PlantSurface_BR.mat (from:...\Pre Calculation)
-%                     covLow.mat           (from:...\Pre Calculation)
+%                     covMatrix.mat           (from:...\Pre Calculation)
 
 clear  
 close all
@@ -145,8 +145,6 @@ modelArrayProb = modelChoicek;
 %which model is associated with the computed input
 modelArrayU = modelChoicek;    
 
-%uChosenModelArray = prob_k;
-
 %% Simulation
 while count <= nIter
     
@@ -229,7 +227,7 @@ while count <= nIter
 end
 
 %calculating the results for the last point
-%1. simulate plant (SS) and save plant data
+% simulate plant (SS) and save plant data
 [~,~,~,~,dxk,yValuePlant,FendGradMeas] = PlantModel(dxk,uk,parPlant);
 
     %%%%%%%%%%%%%%%%% plant information

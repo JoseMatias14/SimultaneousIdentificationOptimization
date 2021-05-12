@@ -1,28 +1,24 @@
 function [gradPlantHat,uk_h,yk_h,xk_h] = CDAGradient(dxk,uk,parPlant,h,H)
-% Estimate plant gradients via Central Difference Approach (CDA)
+% Estimate plant gradients via Central Difference approach (CDA)
 %
 % Inputs:
-%    dxk = initial differential states
-%    uk = inputs
+%    dxk = state values (guess)
+%    uk = inputs (central value for the CDA)
 %    parPlant = plant parameters
-%    h = perturbation size
-%    H = output map function (H*xk = yk)
+%    h = perturbation step
+%    H = output map function (H*zk = yk)
 %
 % Outputs:
 %    gradPlantHat - estimated gradient (measurements - defined by H)
-%    uk_h = input for excitation
-%    yk_h = measurements related to the probing points
-%    xk_h = states related to the probing points
+%    uk_h = required input excitation
+%    yk_h = measurements related to these inputs
+%    xk_h = plant states related to these inputs
 
 % Other m-files required: PlantModel
 % Subfunctions: none
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br 
-% March 2018; Last revision: 13-Mar-2018
 
-%perturbation on the inputs
+%perturbing the inputs
 uh = uk + h;
 u_h = uk - h;
 

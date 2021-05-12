@@ -1,10 +1,9 @@
 function [diff,x_var,u_var,L,Fendxk,FendMeas,FendGradMeas] = ReactorModel(dx0,u0,par,flag)
 %    Block reactor model - Implementation of the isothermal CSTR
-%                Real reaction set: A + 2B -> C & B -> C (Model A)
 %
 % Inputs:
-%    dx0 = initial differential states
-%    u0 = inputs
+%    dx0 = initial differential states (guess)
+%    u0 = inputs (fixed for simulation)
 %    par = system parameters
 %    flag = indicates which model structure to use
 %
@@ -17,32 +16,25 @@ function [diff,x_var,u_var,L,Fendxk,FendMeas,FendGradMeas] = ReactorModel(dx0,u0
 %    FendGradMeasu: numerical gradient
 %
 % Other m-files required: none
-% Subfunctions: none
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br
-% March 2018; Last revision: 13-Mar-2018
         
-addpath ('\\home.ansatt.ntnu.no\joseoa\Documents\casadi-windows-matlabR2016a-v3.4.5')
 import casadi.*
 
-%Multi model structure
-%Multi model structure
-% m1, m2, m3: A + B -k1-> C & 2B -k2-> D
-% m1: k1 = 0.75, k2 = 1.5 (TRUE MODEL)
-% m2: k1 = 0.9,  k2 = 1.3 
-% m3: k1 = 0.6,  k2 = 1.5 
+% Multimodel tuning
+% m1, m2, m3: A + B -k1-> C & 2B -k2-> D & pure D
+% m1: k1 = 0.75,  k2 = 1.2 
+% m2: k1 = 0.72,  k2 = 1.5 
+% m3: k1 = 0.75,  k2 = 1.5  (TRUE MODEL)
 
-% m4, m5, m6: A + B -k3-> 2C & C + 2B -k4-> D
-% m4: k3 = 0.15, k4 = 0.05 
-% m5: k3 = 0.2,  k4 = 0.03 
-% m6: k3 = 0.1,  k4 = 0.01 
+% m4, m5, m6: A + B -k3-> 2C & C + 2B -k4-> D & pure D
+% m4: k3 = 0.0254, k4 = 0.0166 
+% m5: k3 = 0.02,   k4 = 0.02 
+% m6: k3 = 0.028,  k4 = 0.02 
 
 % m7, m8, m9: A + B -k1-> C & D as impurity
-% m1: k1 = 0.1
-% m2: k1 = 0.2
-% m3: k1 = 0.3 
+% m1: k1 = 0.1295
+% m2: k1 = 0.135
+% m3: k1 = 0.12 
 
 %% Differential states
 %symbolic declaration
@@ -53,10 +45,10 @@ x_var = MX.sym('C',par.nc,1); % 1-4 [mol/L]
 %A inflow rate
 u_var = MX.sym('Fa',1); %[L/min]
 %Model determination (boolean)
-xB = MX.sym('xB',9); % 1-3 [-]
+xB = MX.sym('xB',par.nr); % 1-3 [-]
 
 %% System equations
-%%stoichiometric coefficients
+%%stoichiometric coefficients (adapt for the multimodel structure)
 r1 = xB(1) + xB(2) + xB(3);
 r2 = xB(4) + xB(5) + xB(6);
 r3 = xB(7) + xB(8) + xB(9);
@@ -87,8 +79,7 @@ diff = vertcat(u_var*par.Cain/par.V,par.Fb*par.Cbin/par.V,0,(r3*par.Fb*dx0(4)/pa
 L = -x_var(3); 
 %end modeling
 
-% give parameter values
-%Model determination (boolean)
+% give parameter values -> Determining the model structure
 diff = substitute(diff,xB,flag);
 
 %% Casadi commands
@@ -97,7 +88,7 @@ residual = Function('residual',{x_var,u_var},{diff},{'x0','u'},{'xSS'});
 
 %evaluating the roots of the system
 %the order is: dummy label, resolution procedure, residual
-Groot = rootfinder('Groot','newton',residual);% kinsol| nlpsol | newton
+Groot = rootfinder('Groot','kinsol',residual);% kinsol| nlpsol | newton
 
 %now, we give the initial guess and initialize the rootfiner
 sol = Groot('x0',dx0,'u',u0);

@@ -1,21 +1,38 @@
 function  par = ParametersBlockReactor
+%   Parameters of the CSTR model (ReactorModel.m)
+%
+% Inputs:
+%
+% Outputs:
+%    par: struct containing all system parameters
+
+% Other m-files required: none
+% Subfunctions: none
+% MAT-files required: none
+
 
 %number of components
 par.nc = 4;
+
 %number of reaction sets available
 par.nr = 9;
 
-%inflow of B
-par.Fa = 5; %[L/min]
-%inflow of B
+%inflow of A
+% par.Fa = 5; %[L/min]
+
+%inflow of B 
 par.Fb = 5; %[L/min]
+
 %inlet concentration of A
 par.Cain = 2; %[mol/L]
-%inflow of B
+
+%inlet concentration of B
 par.Cbin = 1.5; %[mol/L]
+
 %reactor volume
 par.V = 500; %[L]
-%reaction constants (for models)
+
+%reaction constants (for the 9 different models)
 par.k = [0.75, 1.2,    0,  0;
     0.72, 1.5,    0,  0;
     %0.75, 1.45,    0,  0;
@@ -27,8 +44,9 @@ par.k = [0.75, 1.2,    0,  0;
     0.135,   0,    0,  0;
     0.12,   0,    0,  0]';
 
-%reaction constants (for plant)
+%reaction constants (for the "plant")
 par.k_real = [0.75;1.5];
 
-%number of points for computing the expected value of the objective function (Eq. 12) 
+%number of points for computing the expected value of the objective function  
 par.nint = 10;
+

@@ -1,9 +1,9 @@
 function [diff,x_var,u_var,L,Fendxk,FendMeas,FendGradMeas] = PlantModel(dx0,u0,par)
 %    Block reactor model - Implementation of the isothermal CSTR
-%                Real reaction set: A + 2B -> C & B -> C (Model 1)
+%                Real reaction set: A + 2B -> C & B -> C (Model 3)
 %
 % Inputs:
-%    dx0 = initial differential states
+%    dx0 = initial differential states (guess)
 %    u0 = inputs
 %    par = system parameters
 %
@@ -11,20 +11,15 @@ function [diff,x_var,u_var,L,Fendxk,FendMeas,FendGradMeas] = PlantModel(dx0,u0,p
 %    diff: system symbolic description (casadi)
 %    x_var,u_var: symbolic states and inputs
 %    L: symbolic quadrature value (Cc)
-%    Fendxk: (numeric) differential states values
-%    FendMeas: (numeric) mesurements
-%    FendMeasNoise: (numeric) mesurements with noise
-%    FendGradMeasu: (numeric) gradient of the mesurements
+%    Fendxk: numerical differential states values
+%    FendMeas: numerical mesurements
+%    FendMeasNoise: numerical mesurements with noise
+%    FendGradMeasu: numerical gradient of the mesurements
 %
 % Other m-files required: none
 % Subfunctions: none
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br
-% March 2018; Last revision: 13-Mar-2018
         
-addpath ('\\home.ansatt.ntnu.no\joseoa\Documents\casadi-windows-matlabR2016a-v3.4.5')
 import casadi.*
 
 %% Differential states
@@ -58,8 +53,8 @@ L = -x_var(3);
 %formalizing a function to be used in the *rootfinder*
 residual = Function('residual',{x_var,u_var},{diff},{'x0','u'},{'xSS'});
 
-%evaluating the roots of the system
-%the order is: dummy label, resolution procedure, residual
+%evaluating the zeros of the system
+%rootfinder input order is: dummy label, resolution procedure, residual
 Groot = rootfinder('Groot','kinsol',residual);% kinsol| nlpsol | newton
 
 %now, we give the initial guess and initialize the rootfiner
@@ -77,7 +72,7 @@ xf = Ffun.xSS; %Css
 %extracting SS gradient (symbolically)
 gradMeas = Function('gradMeasu',{u_var},{jacobian(xf,u_var)});
 
-%extracting the results (from symbolic to numeric)
+%extracting the gradient values (from symbolic to numerical)
 FendGradMeas = full(gradMeas(u0));
 
 

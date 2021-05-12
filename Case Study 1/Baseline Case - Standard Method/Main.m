@@ -3,7 +3,7 @@
 % Case study 1: Nine different models of the CSTR reactor are available. Difference between the models lies in the reaction kinetic parameter &
 % set of reactions (structural mismatch)
 %
-% Approach used: Jensen_Shannon Divergence Regularization
+% Approach used: Baseline 
 
 % Other m-files required: ParametersBlockReactor.m;
 % InitialConditionBlockReactor.m; OptimizationBoundsBlockReactor.m;
@@ -11,7 +11,7 @@
 
 % MAT-files required: results_standard.mat(from: ...\Baseline Case - Standard Method)
 %                     PlantSurface_BR.mat (from:...\Pre Calculation)
-%                     covLow.mat           (from:...\Pre Calculation)
+%                     covMatrix.mat           (from:...\Pre Calculation)
 
 clear  
 close all
@@ -24,7 +24,7 @@ import casadi.*
 rng('default')  
 
 %saving file
-results = 'results_JSDR';
+results = 'results_standard';
 
 %% Simulation tuning
 %number of ss periods in the simulation
@@ -133,20 +133,23 @@ yPlantArray = [];     % plant measurements
 yNoNoiseArray = [];   % plant measurements (no noise)
 
 %4. Models
+% inputs computed using the available models
+uModelArray = [];
+
 % probability that the model is correct
 probModelArray = prob_k;
 
 %which model has the highest probability at the current iteration
 modelArrayProb = modelChoicek; 
 
-%store all the inputs used for finding the expected value w.r.t. \lambda
-% these inputs are associated with different values of the \lambda
-ukLambdaArray = [];
+%total modifier of the models
+totalModifierArray = [];
+    
 
 %% Simulation
 while count <= nIter
     
-     fprintf('     iter. >>> %0.0f \n',count) 
+    fprintf('     iter. >>> %0.0f \n',count) 
     
     %1. simulate plant (SS) and save plant data
     [~,~,~,~,dxk,yValuePlant,FendGradMeas] = PlantModel(dxk,uk,parPlant);
@@ -178,26 +181,33 @@ while count <= nIter
         
          %indicating that this is a probing trial for gradient estimation
          modelArrayProb = [modelArrayProb,0,0]; 
-        %%%%%%%%%%%%%%%%%  
+        %%%%%%%%%%%%%%%%% 
 
     %3. Optimizing 
-    [pi_k,prob_k,uk_lambda,epsk,lambdak] = JSDR(dxk,uk,par,yValuePlant,gradPlantHat,epsk,lambdak,prob_k,H,ma);    
-
-        % implementing input filter (for all lambda's in the expectation)
-        uk_lambda = uk + ma.Kinput*(uk_lambda - uk); 
-        ukLambdaArray = [ukLambdaArray, uk_lambda];
-       
-        % actual implemented value
-        uk = uk + ma.Kinput*(pi_k - uk); 
+    [ukArray,totalModifierk,~,epsk,lambdak] = MAOptimization(dxk,uk,par,yValuePlant,gradPlantHat,epsk,lambdak,H,ma);    
+    
+        % optimal decision associated with the ``best'' models
+        uModelArray = [uModelArray, ukArray];
 
         % probability (a posteriori | after the measurements) associated with each of the ma.nModels models
-        probModelArray = [probModelArray, prob_k];
-        
+        probModelArray = [probModelArray, prob_k]; % not updated here!
+
+        %total modifier related to the three models
+        totalModifierArray = [totalModifierArray, totalModifierk];
+  
         % analyzing which model has the highest probability of being the
         % correct one
-        [~,modelChoicek] = max(prob_k);        
+        [~,modelChoicek] = min(totalModifierk);
+    
+    
+    %4. Updating the plant inputs
+    %choosing the optimal input compute when model == modelChoice 
+    uStar = uModelArray(modelChoicek,end);
+
+    % implementing input filter
+    uk = uk + ma.Kinput*(uStar - uk);
         
-     %5. For plotting
+    %5. For plotting
         % Optimization
         uOptArray = [uOptArray, uk];
 
@@ -215,7 +225,7 @@ while count <= nIter
     
     %loop 
     count = count + 1;
-
+      
 end
 
 %calculating the results for the last point
@@ -228,7 +238,7 @@ end
     yNoNoiseArray = [yNoNoiseArray, H*dxk];
 
 %% Saving the results and ploting
-save(results,'uOptArray','epsArray','lambdaArray','gradPlantHatArray','gradMeasPlantArray','yPlantArray','yNoNoiseArray','inputPlantArray','ukLambdaArray','probModelArray','modelArrayProb','nIter','par','ma','parPlant');
+save(results,'uOptArray','epsArray','lambdaArray','gradPlantHatArray','gradMeasPlantArray','yPlantArray','yNoNoiseArray','inputPlantArray','uModelArray','probModelArray','totalModifierArray','modelArrayProb','nIter','par','ma','parPlant','nIter');
 
 %plotting the results
 ResultsPlot
