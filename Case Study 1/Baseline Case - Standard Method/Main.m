@@ -117,7 +117,7 @@ for j = 1:ma.nModels
     end  
 end
 
-%2. Gradient 
+%3. Gradient 
 for i = 1:ma.nMeas
     %plant measurements gradients
     gradMeasPlantArray{i} = [];
@@ -127,12 +127,12 @@ for i = 1:ma.nMeas
 
 end
 
-%3. Plant
+%4. Plant
 inputPlantArray = []; % computed by MAy + plant excitation -> contains all the inputs aplied during the simulation
 yPlantArray = [];     % plant measurements
 yNoNoiseArray = [];   % plant measurements (no noise)
 
-%4. Models
+%5. Models
 % inputs computed using the available models
 uModelArray = [];
 

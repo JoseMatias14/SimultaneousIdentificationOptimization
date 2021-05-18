@@ -30,10 +30,10 @@ uk_h_1 = uk - [1;0]*h;
 uk_h_2 = uk - [0;1]*h;
 
 %use the perturbed input to probe the plant
-[~,xm_h1,~,~] = PlantModel(xk,uk_h1,fk,parPlant,count);
-[~,xm_h2,~,~] = PlantModel(xk,uk_h2,fk,parPlant,count);
-[~,xm_h_1,~,~] = PlantModel(xk,uk_h_1,fk,parPlant,count);
-[~,xm_h_2,~,~] = PlantModel(xk,uk_h_2,fk,parPlant,count);
+[~,xm_h1,~] = PlantModel(xk,uk_h1,fk,parPlant,count);
+[~,xm_h2,~] = PlantModel(xk,uk_h2,fk,parPlant,count);
+[~,xm_h_1,~] = PlantModel(xk,uk_h_1,fk,parPlant,count);
+[~,xm_h_2,~] = PlantModel(xk,uk_h_2,fk,parPlant,count);
 
 %measure plant values at the probe points
 yk_h1 = H*xm_h1;

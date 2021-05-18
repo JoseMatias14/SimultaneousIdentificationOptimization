@@ -171,14 +171,10 @@ par.Pcomp_min = 100*1e5; %100 bar
 
 % changes in the plant model 
 par.ph = 51;
-par.ph_2_d1 = 131; %101
-par.pd1 = 181; %151
-par.pd1_2_d2 = 231; %201
+par.ph_2_d1 = 101;
+par.pd1 = 151;
+par.pd1_2_d2 = 201;
 par.pd2 = 250;
-
-% Maintenance preiods
-par.maintPeriods = 5;
-par.stopPeriods = 25;
 
 
 

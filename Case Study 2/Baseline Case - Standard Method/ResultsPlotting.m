@@ -122,16 +122,18 @@ subplot(2,1,1)
     title('Model Choice')
     legend(leg,'Location','best','FontSize',9)
 
- subplot(2,1,2)
-    stairs(1:tEnd,maintenanceArray,'ko','markersize',3)
+% %plotting probability profile
+% subplot(2,1,2)
+%     area(0:tEnd,probModelArray')
+%     
+%     xlim([0, tEnd])
+%     ylim([0 1])  
+%     
+%     title('Product concentration (C)')
+%     xlabel('SS periods [-]')
+%     ylabel('Probability of model')
+%     legend(mod,'FontSize',6,'Location','best')
 
-    xlim([0, 250])
-    ylim([-0.5, 2.5])
-    yticks([0,1,2])
-    yticklabels({'Ok','Inspection','Maintenance'})
-    ylabel('Model','FontSize',10)
-    xlabel('SS Periods [-]','FontSize',10)
-    title('Maintenance','FontSize',10)
 hold off
 
 if pr(1)

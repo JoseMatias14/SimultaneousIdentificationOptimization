@@ -1,4 +1,4 @@
-function [xk,xmk,grad_uk,plantModel] = PlantModel(xk_1,uk,fk,par,count)
+function [xk,xmk,grad_uk] = PlantModel(xk_1,uk,fk,par,count)
 
 
 % Subsea gas compression model - The purpose of the gas compression station is to
@@ -18,9 +18,7 @@ function [xk,xmk,grad_uk,plantModel] = PlantModel(xk_1,uk,fk,par,count)
 %
 % Outputs:
 %       xk = steady-state system state = f(uk,fk)
-%       xmk = steady-state system state with noise
 %       grad_uk = steady-state system gradient
-%       plantModel = actual plant model (-1 indicates intermediary state)
 
 %
 % Other m-files required: none
@@ -206,21 +204,16 @@ import casadi.*
     
     if count < par.ph %0 to 30
         f5 = nu - f5h;
-        plantModel = 1;
     elseif count < par.ph_2_d1 %31 to 60
-        cc = (count - par.ph)/(par.ph_2_d1 - par.ph);
+        cc = (count - 30)/(60 - 30);
         f5 = nu - ((1 - cc)*f5h + cc*f5d1);
-        plantModel = -1;
     elseif count < par.pd1 %61 to 90
         f5 = nu - f5d1;
-        plantModel = 2;
     elseif count < par.pd1_2_d2 %91 to 120
-        cc = (count - par.pd1)/(par.pd1_2_d2 - par.pd1);
+        cc = (count - 90)/(120 - 90);
         f5 = nu - ((1 - cc)*f5d1 + cc*f5d2);
-        plantModel = -1; 
     else %121 to 150
         f5 = nu - f5d2;
-        plantModel = 3;
     end
       
     %compressor head (source ?)
@@ -334,7 +327,7 @@ import casadi.*
     %extracting the results (from symbolic to numerical)
     xk = xSol(1:10);
     %adding noise
-    xmk = xk + 0.01*randn(10,1); %0.005
+    xmk = xk + 0.01*randn(10,1); % 0.005
 
     % ===================================
     %     Gradient

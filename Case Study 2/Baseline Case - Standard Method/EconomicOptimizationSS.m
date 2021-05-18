@@ -45,8 +45,8 @@ g = {g{:},(x_var(5) + mod(5))*1e7};
 g = {g{:},(x_var(3) + mod(3))/u_var(2)};
 
 % objective function
-%J = -((x_var(3) + mod(3)))/((x_var(8) + mod(6))*1e3);
-J = -(100*(x_var(3) + mod(3)) + 100*(x_var(9) + mod(7)) - 100*(x_var(8) + mod(6)) - (x_var(10) + mod(8)));
+J = -((x_var(3) + mod(3)))/((x_var(8) + mod(6))*1e3);
+
 % formalize it into an NLP problem
 nlp = struct('x',vertcat(w{:}),'f',J,'g',vertcat(g{:}));
 
