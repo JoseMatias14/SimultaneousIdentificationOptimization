@@ -1,4 +1,16 @@
 function  par = ParametersSubseaGas
+%   Parameters of the Subsea Compression Model
+%
+% Inputs:
+%
+% Outputs:
+%    par: struct containing all system parameters
+
+% Other m-files required: none
+% Subfunctions: none
+% MAT-files required: none
+
+% average feed composition
 x = [.92,.05,.02,.005,.005,0,0,0,0,0,0];
 
 % fixed
@@ -30,7 +42,7 @@ M_ =[...
 
 par.Mm = M_*x'; % [kg/kmol]
 %liquid density - from the reservoir
-par.rho_liq = 10; % [kg/m3]
+par.rho_liq = 10; % [1e2 kg/m3]
 %compressor head parameter
 par.head_par = 4; % [m]
 
@@ -107,20 +119,6 @@ par.c5 = -0.9937; % [s2/m6]
 par.c6 = 2.256; % [s/m3]
 par.c7 = 1.888; % [-]
 
-%%%% 
-% check these values
-%%%%
-
-% %Surge condition calculation
-% par.c8 = 1; %[s2/m6]
-% par.c9 = 1; %[s/m3]
-% par.c10 = 1; %[-]
-% 
-% %Stonewall condition calculation
-% par.c11 = 1; %[s2/m6]
-% par.c12 = 1; %[s/m3]
-% par.c13 = 1; %[-]
-
 %separation efficiency
 par.c14 = 5; %[kg/m3]
 par.c15 = 7; %[(m^{15/2} s^3)/kg^{9/2}]
@@ -131,19 +129,11 @@ par.n12 = -2.398; % [s/m3]
 par.n13 = 2.75; % [-]
 par.n14 = -3.969; % [s/m3]
 par.n15 = 4.303; % [-]
-% par.n11 = 0.592; % [s2/m6]
-% par.n12 = -2.398; % [s/m3]
-% par.n13 = 2.75; % [-]
-% par.n14 = -3.969; % [s/m3]
-% par.n15 = 4.303; % [-]
 
 %compressor map constants
 par.n21 = -0.5; % []
 par.n22 = 1.8; % []
 par.n23 = -0.85; % []
-% par.n21 = -0.55; % []
-% par.n22 = 1.9; % []
-% par.n23 = -0.85; % []
 
 %compressor map constants
 par.n31 = 0.43; % []
@@ -151,25 +141,17 @@ par.n32 = 0.7; % []
 par.n33 = 5; % []
 par.n34 = 1; % []
 par.n35 = 2; % []
-% par.n31 = 0.3; % []
-% par.n32 = 0.9; % []
-% par.n33 = 2; % []
-% par.n34 = 1; % []
-% par.n35 = 2; % []
 
-%weights for the total modifier
-% par.Q1 = diag([0,0,1e0,0,1e0,1e1,0,0]);
-% par.Q2 = diag([0,0,1e0,0,1e0,1e1,0,0,0,0,1e0,0,1e0,1e1,0,0]);
-par.Q1 = eye(8);
-par.Q2 = eye(16);
-
-%Optimization
-par.qN_min = 1.163;
+%Operational constraints
+%compressor speed (normalized) lower and upper bounds
+par.qN_min = 1.163; 
 par.qN_max = 2.286;
 
-par.Pcomp_min = 100*1e5; %100 bar
+%outler compressor pressure lower bounds
+par.Pcomp_min = 100*1e5; %100 [bar]
 
-% changes in the plant model 
+% controlling the compressor degradation model (see Figure 6)
+% changes in the plant model (units: [SS periods])
 par.ph = 51;
 par.ph_2_d1 = 101;
 par.pd1 = 151;

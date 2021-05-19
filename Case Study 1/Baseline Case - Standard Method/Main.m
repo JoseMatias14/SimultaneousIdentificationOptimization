@@ -9,8 +9,7 @@
 % InitialConditionBlockReactor.m; OptimizationBoundsBlockReactor.m;
 % PlantModel.m; CDAGradient.m; ECM.m; ReactorModel.m; EconomicOptimizationSS.m; ResultsPlot.m
 
-% MAT-files required: results_standard.mat(from: ...\Baseline Case - Standard Method)
-%                     PlantSurface_BR.mat (from:...\Pre Calculation)
+% MAT-files required: PlantSurface_BR.mat (from:...\Pre Calculation)
 %                     covMatrix.mat           (from:...\Pre Calculation)
 
 clear  

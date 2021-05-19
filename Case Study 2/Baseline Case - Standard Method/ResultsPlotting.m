@@ -1,30 +1,35 @@
-clear
-close
-clc
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % For plotting without running the simulation, uncomment this section %
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% clear
+% close
+% clc
+% 
+% % results
+% load('results_standard');
 
-%Previously plant surface
-load('PlantSurface');
-
-% results
-load('baseline');
+%%
+% loading precomputed optimal profiles
+opt = load('PlantOptProfiles');
 
 % to control figure printing
 % false - do not print
 % true - print
-pPDF = false;
+pPDF = true;
 pTIFF = false;
 pr = [pPDF, pTIFF];
 
-%% Plotting
+%% names and tags
 inputs = {'u_{choke}','u_{comp}'};
 measurements = {'Choke outlet pressure','Reservoir outflow','Compressor inflow','Compressor temperature','Compressor outlet pressure','Compressor efficiency','Compressor head','Compressor Power','Pump inflow','Pump power'};
 units = {'P_{choke} [Pa]','q_{res} [m3/s]','q_{comp} [m3/s]','T_{comp} [K]','P_{comp} [Pa]','\nu [-]','H [m]','P_{ow} [W]','q_{pump} [m3/s]','P_{op} [W]'};
 scaling = [1e7,1e0,1e0,1e2,1e7,1e0,1e1,1e4,1e-1,1e3];
+mod = {'H','D_1','D_2'};
+
 
 %% 1. Input Comparison
 leg = {'MAy','Opt'};
-
-opt = load('PlantOptProfiles');
 
 f1 = figure(1);
 
@@ -44,10 +49,10 @@ f1 = figure(1);
         legend(leg,'Location','best','FontSize',9)
 
 if pr(1)
-    print(f1,'Results_Inputs','-dpdf')
+    print(f1,'Results_Inputs_STD','-dpdf')
 end
 if pr(2)
-    print(f1,'-r1200','-dtiff','Results_Inputs.tif');
+    print(f1,'-r1200','-dtiff','Results_Inputs_STD.tif');
 end
 
 
@@ -67,12 +72,12 @@ f2 = figure(2);
     title('grad u choke')
     legend(leg,'Location','best','FontSize',9)
 
-if pr(1)
-    print(f2,'Results_Gradients_u1','-dpdf')
-end
-if pr(2)
-    print(f2,'-r1200','-dtiff','Results_Gradients_u1.tif');
-end
+% if pr(1)
+%     print(f2,'Results_Gradients_u1','-dpdf')
+% end
+% if pr(2)
+%     print(f2,'-r1200','-dtiff','Results_Gradients_u1.tif');
+% end
 
 f3 = figure(3);
     for i = 1:ma.nMeas
@@ -87,16 +92,15 @@ f3 = figure(3);
 title('grad u comp')
 legend(leg,'Location','best','FontSize',9)
 
-if pr(1)
-    print(f3,'Results_Gradients_u2','-dpdf')
-end
-if pr(2)
-    print(f3,'-r1200','-dtiff','Results_Gradients_u2.tif');
-end
+% if pr(1)
+%     print(f3,'Results_Gradients_u2','-dpdf')
+% end
+% if pr(2)
+%     print(f3,'-r1200','-dtiff','Results_Gradients_u2.tif');
+% end
 
 %% 3. comparing choosen model with actual model
 leg = {'plant','hat'};
-mod = {'H','D_1','D_2'};
 
 %real plant array
 rpArray = [];
@@ -122,62 +126,11 @@ subplot(2,1,1)
     title('Model Choice')
     legend(leg,'Location','best','FontSize',9)
 
-% %plotting probability profile
-% subplot(2,1,2)
-%     area(0:tEnd,probModelArray')
-%     
-%     xlim([0, tEnd])
-%     ylim([0 1])  
-%     
-%     title('Product concentration (C)')
-%     xlabel('SS periods [-]')
-%     ylabel('Probability of model')
-%     legend(mod,'FontSize',6,'Location','best')
-
 hold off
 
 if pr(1)
-    print(f4,'Results_ModelChoice','-dpdf')
+    print(f4,'Results_ModelChoice_STD','-dpdf')
 end
 if pr(2)
-    print(f4,'-r1200','-dtiff','Results_ModelChoice.tif');
+    print(f4,'-r1200','-dtiff','Results_ModelChoice_STD.tif');
 end
-
-
-
-% %% 4. comparing estimated parameters
-% 
-% %real plant array
-% rpThetaArray{1} = [];
-% rpThetaArray{2} = [];
-% rpThetaArray{3} = [];
-% 
-% for count = 1:tEnd
-%     if count < 31 
-%         rpThetaArray{1} = [rpThetaArray{1},[0.582;-2.398;2.75;-3.969;4.303]];
-%     elseif count < 91 && count > 60
-%         rpThetaArray{2} = [rpThetaArray{2},[-0.5;1.8;-0.85]];
-%     elseif count > 121
-%         rpThetaArray{3} = [rpThetaArray{3},[0.43;0.7;5;1;2]];
-%     else 
-%         rpThetaArray{1} = [rpThetaArray{1},[0;0;0;0;0]];
-%         rpThetaArray{2} = [rpThetaArray{2},[0;0;0]];
-%         rpThetaArray{3} = [rpThetaArray{3},[0;0;0;0;0]];
-%     end
-% end
-% 
-% f5 = figure(5);
-% color = ['k','b','r'];
-% for i = 1:ma.nModels
-%         plot(1:count,rpThetaArray{i},color(i),'LineSpec',':')
-%         hold on
-%         plot(1:count,thetaHat{i},color(i))
-% 
-% end
-% 
-% ylabel('Parameters','FontSize',10)
-% title('Estimated parameters')
-% print(f4,'-r80','-dpdf','ResultsParameters.pdf');
-% 
-% 
-% 

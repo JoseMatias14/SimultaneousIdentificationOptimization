@@ -22,10 +22,6 @@ function [ukArray,totalModifierArray,rho_k,epsk,lambdak] = MAOptimization(dxk_1,
 % MAT-files required: covLow.mat
 import casadi.*
 
-
-addpath ('\\home.ansatt.ntnu.no\joseoa\Documents\casadi-windows-matlabR2016a-v3.4.5')
-import casadi.*
-
 %For covariance - previously calculated
 load('covMatrix');
 

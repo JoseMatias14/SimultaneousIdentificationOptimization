@@ -1,5 +1,4 @@
 function [alg,x_var,u_var,f_var,L,xk,yk,grad_yk] = SystemModel(xk_1,uk,fk,par,modelFlag)
-% Build system model for optimization (IPOPT)
 % Subsea gas compression model - The purpose of the gas compression station is to
 %                               boost the pressure of the stream so that it is sufficiently
 %                               high to overcome the pressure drop in the transportation
@@ -9,32 +8,32 @@ function [alg,x_var,u_var,f_var,L,xk,yk,grad_yk] = SystemModel(xk_1,uk,fk,par,mo
 %                               Operation of a Subsea Gas Compression
 %                               System Under Uncertainty - A. Verheyleweghen
 %
+%                           ! Steady-state model
+%
 % Inputs:
-%|      par = system parameters
+%       xk_1 = past system state --> used as initial guess to the NLP
+%       uk = current system input
+%       fk = current system feed
+%       par = system parameters
+%       modelFlag = flag indicating which compressor model is used
 %
 % Outputs:
-%       alg = steady-state system model (CASADI)
-%       x_var = system states (CASADI)
-%       u_var = system inputs (CASADI)
-%       f_var = system feed (CASADI)
+%       alg = model equations as CasADi variables
+%       x_var,u_var,f_var = model equatons as CasADi variables
+%       L = objective function as CasADi variables
+%       xk = steady-state model states
+%       yk = steady-state model prediction (matching system measurements)
+%       grad_yk = steady-state model gradients
 
-%
-% Other m-files required: none
-% Subfunctions: none
+% Other m-files required: OptimizationBoundsSubseaGas.m
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br
-% August 2019; Last revision: 08-Aug-2019
 
-addpath ('\\home.ansatt.ntnu.no\joseoa\Documents\casadi-windows-matlabR2016a-v3.4.5')
 import casadi.*
 
     %% Parameters
-    %x = [.92,.05,.02,.005,.005,0,0,0,0,0,0];
     % fixed
     %choke valve constant
-    C_choke = par.C_choke; %0.4*.4179402833086; [kg^0.5 m^0.5]
+    C_choke = par.C_choke; %[kg^0.5 m^0.5]
     %separator cross sectional area 
     A = pi*(par.D/2)^2; %[m2]
     %gas constant
@@ -44,26 +43,9 @@ import casadi.*
     %molar mass
     Mm = par.Mm; % [g/mol]
     %liquid density - from the reservoir
-    rho_liq = par.rho_liq ; %10 [kg/m3]
+    rho_liq = par.rho_liq ; %[1e2 kg/m3]
     %compressor head parameter
-    head_par = par.head_par; %4 [?????]
-
-%     %pseudo critical mixture pressure
-%     Ppc = par.Ppc; %[Pa]
-%     %pseudo critical mixture temperature
-%     Tpc = par.Tpc; %[K]
-%     %compressibility factor equation
-%     a1 = par.a1; %0.3265 [-]
-%     a2 = par.a2; %-1.0700 [K]
-%     a3 = par.a3; %-0.5339[K^3]
-%     a4 = par.a4; %0.01569 [K^4]
-%     a5 = par.a5; %-0.05165 [K^5]
-%     a6 = par.a6; %0.5475 [-]
-%     a7 = par.a7; %-0.7361 [K]
-%     a8 = par.a8; %0.1844[K^2]
-%     a9 = par.a9; %0.1056 [-]
-%     a10 = par.a10; %0.6134 [K^3]
-%     a11 = par.a11; %0.7210 [-]
+    head_par = par.head_par; %[m]
 
     %Thermodynamic - cp calculation
     c1 = par.c1; %[-]
@@ -73,20 +55,14 @@ import casadi.*
 
     %adjustable
     %Compressor Head
-    c5 = SX.sym('c5'); %-0.9937 [s2/m6]
-    c6 = SX.sym('c6'); %2.256 [s/m3]
-    c7 = SX.sym('c7'); %1.888 [-]
-%     %Surge condition calculation
-%     c8 = SX.sym('c8'); %[s2/m6]
-%     c9 = SX.sym('c9'); %[s/m3]
-%     c10 = SX.sym('c10'); %[-]
-%     %Stonewall condition calculation
-%     c11 = SX.sym('c11'); %[s2/m6]
-%     c12 = SX.sym('c12'); %[s/m3]
-%     c13 = SX.sym('c13'); %[-]
+    c5 = SX.sym('c5'); %[s2/m6]
+    c6 = SX.sym('c6'); %[s/m3]
+    c7 = SX.sym('c7'); %[-]
+
     %separation efficiency
-    c14 = SX.sym('c14'); %5 [kg2/m6]
-    c15 = SX.sym('c15'); %7 [(m^{13/2} s)/kg^{5/2}]
+    c14 = SX.sym('c14'); %[kg2/m6]
+    c15 = SX.sym('c15'); %[(m^{13/2} s)/kg^{5/2}]
+    
     %compressor map constants
     n11 = SX.sym('n11'); 
     n12 = SX.sym('n12'); 
@@ -107,19 +83,19 @@ import casadi.*
     %% Inputs
     %Manipulated variables
     %choke valve openings 
-    u_choke = SX.sym('u_choke'); % u_1 = 0.565 [%]
+    u_choke = SX.sym('u_choke'); % [-]
     %compressor speed (normalized)
-    u_comp = SX.sym('u_comp'); % u_2 = 0.85[%]
+    u_comp = SX.sym('u_comp'); %[-]
 
     % Feed
     %mass flow gas from the reservoir
-    m_res_gas = SX.sym('m_res_gas'); %0|1.4616 [kg/s] -- 1e2
+    m_res_gas = SX.sym('m_res_gas'); %[1e2 kg/s]
     %mass flow liquid from the reservoir
-    m_res_liq = SX.sym('m_res_liq'); %0.9|0.8997 [kg/s] -- 1e2
+    m_res_liq = SX.sym('m_res_liq'); %[1e2 kg/s]
     %reservoir pressure
-    P_res = SX.sym('P_res'); % 1.0 [Pa]  -- 1e7
+    P_res = SX.sym('P_res'); %[1e7 Pa]
     %reservoir temperature
-    T_res = SX.sym('T_res'); % 3.5 [K]  -- 1e2 
+    T_res = SX.sym('T_res'); %[1e2 K] 
 
     %% Variables
     %Reservoir
@@ -129,34 +105,33 @@ import casadi.*
 
     %Choke
     %choke outlet pressure
-    P_choke_out = SX.sym('P_choke_out'); % [Pa] -- 1e7
+    P_choke_out = SX.sym('P_choke_out'); % [1e7 Pa]
 
     %Compressor
     %inlet volumetric flowrate
     q_comp_in = SX.sym('q_comp_in'); % [m3/s]
     %temperature
-    T_comp_out = SX.sym('T_comp_out'); % [K] -- 1e2
+    T_comp_out = SX.sym('T_comp_out'); % [1e2 K]
     %pressure
-    P_comp_out = SX.sym('P_comp_out'); % [Pa] -- 1e7
+    P_comp_out = SX.sym('P_comp_out'); % [1e7 Pa]
     %compressor efficiency
     nu = SX.sym('nu'); %[-]
     %compressor head
-    H = SX.sym('H'); % [m] -- 1e1
+    H = SX.sym('H'); % [1e1 m]
     %compressor power
-    Pow = SX.sym('Pow'); %[W] -- 1e4
+    Pow = SX.sym('Pow'); %[1e4 W]
 
     %Pump
     %inlet volumetric flowrate
-    q_pump_in = SX.sym('q_pump_in'); % [m3/s] -- 1e-1
+    q_pump_in = SX.sym('q_pump_in'); % [1e-1 m3/s]
     %compressor power
-    Pop = SX.sym('Pop'); %[W] -- 1e3
+    Pop = SX.sym('Pop'); %[1e3 W]
     
     %% Modeling
-    %supporting relations
     % ===================================
     %     Choke
     % ===================================
-    %Density %[kg/m3] -- 1e2
+    %Density %[1e2 kg/m3]
     rho_gas_choke_out = 1e-2*(P_choke_out*1e7)*(Mm*1e-3)/(8.3144*(T_res*1e2));
 
     % ===================================
@@ -168,12 +143,13 @@ import casadi.*
     alpha = (1 - (rho_gas_choke_out/c14)^2 - c15*rho_gas_choke_out^2*K^3);
     %heat capaticy of the outlet stream %[J/(K mol)]
     Cp_sep = (c1 + c2*(T_res*1e2) + c3*(T_res*1e2)^2 + c4*(T_res*1e2)^(-2))*R;
+    
     % ===================================
     %     Compressor
     % ===================================
     %gas volume fraction %[-]
     GVF = (alpha*(m_res_gas*1e2)/(rho_gas_choke_out*1e2))/(q_comp_in);%qgas/(qliq + qgas)
-    %compressor average density at the inlet %[kg/m3] -- 1e2
+    %compressor average density at the inlet %[1e2 kg/m3]
     rho_comp_avg = 1e-2*(GVF*(rho_gas_choke_out*1e2) + (1 - GVF)*(rho_liq*1e2));
     %heat capaticy of the outlet stream %[J/(K mol)] 
     Cp_comp = (c1 + c2*(T_comp_out*1e2) + c3*(T_comp_out*1e2)^2 + c4*(T_comp_out*1e2)^(-2))*R;
@@ -203,11 +179,11 @@ import casadi.*
         f5 = nu - (n31 + n32*qN.^2./(n33 + qN.^2.*(n34 + qN.^2/n35)));
     end
     
-    %compressor head (source ?)
+    %compressor head 
     f6 = (H*1e1) - head_par*(c5*qN^2 + c6*qN + c7)*u_comp^2*fwood;
     %compressor power
     f7 = (Pow*1e4) - (H*1e1)*(q_comp_in)*(rho_gas_choke_out*1e2)*g/nu;
-    %temperature outlet (source ?)
+    %temperature outlet 
     f8 = (H*1e1) - k*R/(g*(Mm*1e-3))*((T_comp_out*1e2) - (T_res*1e2));
     %pump inlet volumetric flowrate
     f9 = (q_pump_in*1e-1) - ((1 - alpha)*(m_res_gas*1e2)/(rho_gas_choke_out*1e2) + alpha*(m_res_liq*1e2)/(rho_liq*1e2));
@@ -221,12 +197,6 @@ import casadi.*
     alg = substitute(alg,c5,par.c5);
     alg = substitute(alg,c6,par.c6);
     alg = substitute(alg,c7,par.c7);
-%     alg = substitute(alg,c8,par.c8);
-%     alg = substitute(alg,c9,par.c9);
-%     alg = substitute(alg,c10,par.c10);
-%     alg = substitute(alg,c11,par.c11);
-%     alg = substitute(alg,c12,par.c12);
-%     alg = substitute(alg,c13,par.c13);
     alg = substitute(alg,c14,par.c14);
     alg = substitute(alg,c15,par.c15);
     
@@ -253,12 +223,10 @@ import casadi.*
     u_var = vertcat(u_choke,u_comp);
     f_var = vertcat(m_res_gas,m_res_liq,P_res,T_res);
 
-    
     % objective function
     L = -x_var(3)/(x_var(8)*1e3);
 
     %end modeling
-
     %% Casadi commands
     % Building NLP
     % decision variables
@@ -276,7 +244,7 @@ import casadi.*
     g = {g{:},alg};
 
     % objective function
-    J = 0;
+    J = 0; % dummy: use IPOPT only to find a feasible point
 
     % formalize it into an NLP problem
     nlp = struct('x',vertcat(w{:}),'f',J,'g',vertcat(g{:}));
@@ -291,8 +259,6 @@ import casadi.*
     %     SS simulation
     % ===================================
     % Solving
-    %guess for the varibles
-    %[xGuess,~,~] = InitialGuessSubseaGasCalculation(par);
     %setting lower and upper bounds
     [lbx,ubx,~,~] = OptimizationBoundsSubseaGas(par);
 
@@ -301,7 +267,7 @@ import casadi.*
     lbw = [];
     ubw = [];
 
-    lbw = [lbw;lbx;uk;fk];%one is a dummy variable - represent time
+    lbw = [lbw;lbx;uk;fk];
     ubw = [ubw;ubx;uk;fk];
     wk = [wk;xk_1;uk;fk];
 
@@ -314,26 +280,23 @@ import casadi.*
     sol = F('x0',wk,'lbx',lbw,'ubx',ubw,'lbg',lbg,'ubg',ubg);
 
     clc
-    % Extract Solution
+    % Extract Solution (from symbolic to numerical)
     xSol = full(sol.x);
-    %extracting the results (from symbolic to numerical)
+    %extracting the results 
     xk = xSol(1:10);
     %model predictions
     yk = par.H*xk;
     
-    
     % ===================================
     %     Gradient
     % ===================================
-    %calculating gradients
+    % building gradients function
     sens = Function('grad_uk',{x_var,u_var,f_var},{-jacobian(alg,x_var)\jacobian(alg,u_var)});
 
-    % ===================================
-    %     Gradient
-    % ===================================
+    % computing the gradient
     grad_uk = full(sens(xk,uk,fk));
     
-    %model gradients
+    % computing model output measurements 
     grad_yk = par.H*grad_uk;
     
 end

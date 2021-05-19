@@ -7,13 +7,11 @@
 %
 % Approach used: Baseline 
 
-% Other m-files required: ParametersBlockReactor.m;
-% InitialConditionBlockReactor.m; OptimizationBoundsBlockReactor.m;
-% PlantModel.m; CDAGradient.m; ECM.m; ReactorModel.m; EconomicOptimizationSS.m; ResultsPlot.m
+% Other m-files required: ParametersSubseaGas.m;
+% InitialConditionSubseaGas.m; OptimizationBoundsSubseaGas.m;
+% PlantModel.m; CDAGradient.m; OnlineMaintenance.m; ReactorModel.m; EconomicOptimizationSS.m; ResultsPlot.m
 
-% MAT-files required: results_standard.mat(from: ...\Baseline Case - Standard Method)
-%                     PlantSurface_BR.mat (from:...\Pre Calculation)
-%                     covMatrix.mat           (from:...\Pre Calculation)
+% MAT-files required: PlantOptProfiles        (from:...\Pre Calculation)?
 
 clear
 close all
@@ -31,7 +29,7 @@ results = 'results_standard';
 
 %% Simulation tuning
 %number of ss periods in the simulation
-tEnd = 250;
+tEnd = 220; %250
 
 %paramters
 par = ParametersSubseaGas;
@@ -184,11 +182,11 @@ while count <= tEnd
         %%%%%%%%%%%%%%%%%%
 
     %2. Gradient estimation using CDA
-    [gradPlantHat,uk_h1,uk_h2,yk_h1,yk_h2] = CDAGradient(H*xmk,xk,uk,fk,parPlant,h,H,count);
+    [gradPlantHat,uk_h,yk_h] = CDAGradient(H*xmk,xk,uk,fk,parPlant,h,H,count);
 
         %%%%%%%%%%%%%%%%% saving inputs for plant excitation + system measurements at these points
-        inputPlantArray = [inputPlantArray,uk_h1,uk_h2];
-        yPlantArray = [yPlantArray,yk_h1(1:ma.nMeas),yk_h2(1:ma.nMeas)];
+        inputPlantArray = [inputPlantArray,uk_h];
+        yPlantArray = [yPlantArray,yk_h];
 
         for i = 1:ma.nMeas
             gradPlantHatArray{i} = [gradPlantHatArray{i},gradPlantHat(i,:)'];
@@ -236,12 +234,53 @@ end
     %%%%%%%%%%%%%%%%% plant information
     inputPlantArray = [inputPlantArray, uk];
     yPlantArray = [yPlantArray, H*xmk];
+    
+    
+%% Preparing data for plotting/saving
+% See page 9:
+% if the heavily degraded compressor state is identified for 10 consecutive SS periods
+
+% counter for the 10 consecutive SS period
+countStop = 1;
+for ii = 1:tEnd
+    
+    % checking if the degraded model is CONSECUTIVELY identified 
+    if modelArrayProb(ii) == 3 && modelArrayProb(ii - 1) == 3
+        countStop = countStop + 1;
+    else 
+        countStop = 1;
+    end
+    
+    if countStop == 10
+        % find shutdown SS period
+        opStop = ii;
+        
+        % terminate execution of for loop
+        break
+    
+    end
+    
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This could have been done in the simulation, but here it is easier to do
+% it and the effect is the same
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% zero-ing arrays after the production shutdown
+[temp1,temp2] = size(uOptArray);
+uOptArray(:,opStop:end) = zeros(temp1,length(opStop:temp2));
+
+[temp1,temp2] = size(yPlantArray);
+yPlantArray(:,(opStop*5):end) = zeros(temp1,length((opStop*5):temp2)); % 1 opt + 4 excitation points/SS period
+
+[temp1,temp2] = size(modelArrayProb);
+modelArrayProb(:,opStop:end) = zeros(temp1,length(opStop:temp2));
 
 %% Saving the results and ploting
 save(results,'inputPlantArray','yPlantArray','gradMeasPlantArray','gradPlantHatArray',...
-              'uOptArray','uModelArray','probModelArray','uChosenModelArray','modelArrayProb','modelArrayU',...
-              'tEnd','ma','par','parPlant');
+              'uOptArray','uModelArray','probModelArray','modelArrayProb',...
+              'tEnd','ma','par','parPlant','opStop');
 
-ResultsPlotting          
+%ResultsPlotting          
           
 beep

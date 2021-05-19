@@ -1,31 +1,28 @@
 function [pik,ukArray,rho_k,pi_k_index,epsk,lambdak] = OnlineMaintenance(xk_1,uk_1,fk_1,par,yValuePlant,gradYPlantHat,epsk_1,lambdak_1,rho_k,H,ma)
-% Apply MA optimization
+% Apply baseline method (see [8])
 %
 % Inputs:
-%    dxk_1 = current value of the differential states (only used as initial guess to find the SS)
-%    uk_1 = current value of the inputs
+%    xk_1 = current value of the states (only used as initial guess to find the SS)
+%    uk_1, fk_1 = current value of the inputs and feed
 %    par = model parameters
-%    yValuePlant = plant measurements
-%    gradYPlantHat = plant gradient estimates
+%    yValuePlant = current plant measurements
+%    gradYPlantHat = current plant gradient estimates
 %    epsk_1,lambdak_1 = modifiers (past iteration)
+%    rho_k = current belief vector
 %    H = output map function (H*xk = yk)
 %    ma = method parameters
 %
 % Outputs:
 %    ukArray = new inputs setpoint (for all models in the set)
-%    costkArray = reward (for all models in the set)
+%    pik = inputs for the models with the smallest total modifier
+%    rho_k = belief vector (not updated here)
+%    pi_k_index = model with the smallest total modifier
 %    epsk,lambdak = updated modifiers
 
-% Other m-files required: EconomicOptimizationSS.m, ReactorModel.m
-% Subfunctions: OptimizationBoundsBlockReactor.m
+% Other m-files required: EconomicOptimizationSS.m, SystemModel.m
 % MAT-files required: none
-%
-% Author: Jose Otavio Matias
-% email: jose.otavio@usp.br
-% March 2018; Last revision: 29-Jul-2019
 
 import casadi.*
-
 
 %for computing inputs setpoint and cost for all models
 ukArray = [];
@@ -42,7 +39,7 @@ for jj = 1:ma.nModels
     flag = zeros(1,ma.nModels);
     flag(jj) = 1;
     
-    %reading model data
+    %getting model predictions at current operational point
     [alg,x_var,u_var,f_var,~,~,measValue,gradMeas] = SystemModel(xk_1,uk_1,fk_1,par,flag);
     
     %updating the modifers with the model information at uk - filtered modifiers
@@ -55,26 +52,22 @@ for jj = 1:ma.nModels
     %computing total modifier
     res1 = yValuePlant - measValue;
     res2 = (gradYPlantHat - gradMeas)';
-    tMod = 0.5*(res1'*par.Q1* res1) + 0.5*(([res2(1,:),res2(2,:)])*par.Q2*([res2(1,:),res2(2,:)])');
+    tMod = 0.5*(res1'* res1) + 0.5*(([res2(1,:),res2(2,:)])*([res2(1,:),res2(2,:)])');
 
     modArray = [modArray, tMod];
     
     %Steady state optimization of the modified problem
-    uOptk = EconomicOptimizationSS(mod{jj},alg,x_var,u_var,f_var,xk_1,uk_1,fk_1,par);
+    [uOptk,~,~] = EconomicOptimizationSS(xk_1,uk_1,fk_1,par,alg,x_var,u_var,f_var,mod{jj});
     clc
     
     %store values
     ukArray = [ukArray, uOptk];
 
-
 end
-
-
-    %choosing the policy that minimize the total cost
+    %choosing the input (policy) that minimizes the total cost
     [~,pi_k_index] = min(modArray);
     
     pik = ukArray(:,pi_k_index);
-
 
 end
 

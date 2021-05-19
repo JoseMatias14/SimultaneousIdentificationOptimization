@@ -1,5 +1,5 @@
 function [dx0,u0] = InitialConditionBlockReactor
-%   Initial condition for simulating CSTR model (ReactorModel.m)
+%   Initial condition for simulating CSTR model
 %
 % Inputs:
 %
